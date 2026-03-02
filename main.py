@@ -77,30 +77,33 @@ class ContactTracingApp:
     # ── UI Layout ────────────────────────────────────────────────────────────
     def _build_ui(self):
         # Title bar
-        title_bar = tk.Frame(self.root, bg=self.ACCENT, pady=8)
+        title_bar = tk.Frame(self.root, bg=self.ACCENT, pady=5)
         title_bar.pack(fill="x")
-        tk.Label(title_bar, text="  Object_detection Contact Tracing System",
-                 font=("Segoe UI", 14, "bold"),
+        tk.Label(title_bar, text="  Object Detection Contact Tracing",
+                 font=("Segoe UI", 11, "bold"),
                  bg=self.ACCENT, fg=self.TEXT).pack(side="left")
-        tk.Label(title_bar, text="YOLOv8  |  Real-Time Detection  ",
-                 font=("Segoe UI", 9),
+        tk.Label(title_bar, text="YOLOv8  |  Real-Time  ",
+                 font=("Segoe UI", 8),
                  bg=self.ACCENT, fg=self.SUBTEXT).pack(side="right")
 
         # Body
         body = tk.Frame(self.root, bg=self.BG)
-        body.pack(fill="both", expand=True, padx=10, pady=8)
+        body.pack(fill="both", expand=True, padx=6, pady=4)
 
         # Left: camera feed
         left = tk.Frame(body, bg=self.PANEL_BG)
         left.pack(side="left", fill="both", expand=True)
         tk.Label(left, text="LIVE FEED", font=("Segoe UI", 8, "bold"),
                  bg=self.PANEL_BG, fg=self.SUBTEXT).pack(pady=(6,0))
-        self.video_label = tk.Label(left, bg="black", width=640, height=480)
-        self.video_label.pack(padx=6, pady=6)
+        # Placeholder black image so label starts at pixel size 480x360
+        placeholder = ImageTk.PhotoImage(Image.new("RGB", (480, 360), (0, 0, 0)))
+        self.video_label = tk.Label(left, image=placeholder, bg="black")
+        self.video_label.image = placeholder
+        self.video_label.pack(padx=4, pady=4)
 
         # Right: sidebar
-        right = tk.Frame(body, bg=self.BG, width=300)
-        right.pack(side="right", fill="y", padx=(8,0))
+        right = tk.Frame(body, bg=self.BG, width=210)
+        right.pack(side="right", fill="y", padx=(6,0))
         right.pack_propagate(False)
 
         self._build_stats(right)
@@ -124,10 +127,10 @@ class ContactTracingApp:
 
         def stat_card(parent, title, color):
             card = tk.Frame(parent, bg=self.ACCENT, padx=6, pady=6)
-            lbl  = tk.Label(card, text="0", font=("Segoe UI", 22, "bold"),
+            lbl  = tk.Label(card, text="0", font=("Segoe UI", 16, "bold"),
                             bg=self.ACCENT, fg=color)
             lbl.pack()
-            tk.Label(card, text=title, font=("Segoe UI", 7),
+            tk.Label(card, text=title, font=("Segoe UI", 6),
                      bg=self.ACCENT, fg=self.SUBTEXT).pack()
             return card, lbl
 
@@ -146,38 +149,38 @@ class ContactTracingApp:
         # Camera selector
         cam_row = tk.Frame(frame, bg=self.PANEL_BG)
         cam_row.pack(fill="x", padx=12, pady=(0,6))
-        tk.Label(cam_row, text="Camera:", font=("Segoe UI", 10),
+        tk.Label(cam_row, text="Camera:", font=("Segoe UI", 8),
                  bg=self.PANEL_BG, fg=self.TEXT).pack(side="left")
         for i in range(3):
             tk.Radiobutton(cam_row, text=str(i), variable=self.camera_index,
                            value=i, bg=self.PANEL_BG, fg=self.TEXT,
                            selectcolor=self.ACCENT,
                            activebackground=self.PANEL_BG,
-                           font=("Segoe UI", 10)).pack(side="left", padx=4)
+                           font=("Segoe UI", 8)).pack(side="left", padx=3)
 
         # Start / Stop
         btn_row = tk.Frame(frame, bg=self.PANEL_BG)
         btn_row.pack(fill="x", padx=12, pady=(0,6))
         self.btn_start = tk.Button(
-            btn_row, text="▶  Start", font=("Segoe UI", 10, "bold"),
+            btn_row, text="▶ Start", font=("Segoe UI", 9, "bold"),
             bg=self.GREEN, fg="#000000", activebackground="#00a865",
-            relief="flat", padx=10, pady=6, cursor="hand2",
+            relief="flat", padx=6, pady=4, cursor="hand2",
             command=self.start_detection)
-        self.btn_start.pack(side="left", expand=True, fill="x", padx=(0,4))
+        self.btn_start.pack(side="left", expand=True, fill="x", padx=(0,3))
 
         self.btn_stop = tk.Button(
-            btn_row, text="⏹  Stop", font=("Segoe UI", 10, "bold"),
+            btn_row, text="⏹ Stop", font=("Segoe UI", 9, "bold"),
             bg=self.RED, fg="white", activebackground="#b03040",
-            relief="flat", padx=10, pady=6, cursor="hand2", state="disabled",
+            relief="flat", padx=6, pady=4, cursor="hand2", state="disabled",
             command=self.stop_detection)
-        self.btn_stop.pack(side="left", expand=True, fill="x", padx=(4,0))
+        self.btn_stop.pack(side="left", expand=True, fill="x", padx=(3,0))
 
         # Clear alerts
-        tk.Button(frame, text="🗑  Clear Alerts",
-                  font=("Segoe UI", 10), bg=self.ACCENT, fg=self.TEXT,
+        tk.Button(frame, text="Clear Alerts",
+                  font=("Segoe UI", 8), bg=self.ACCENT, fg=self.TEXT,
                   activebackground="#1a4a80", relief="flat",
-                  padx=10, pady=5, cursor="hand2",
-                  command=self.clear_alerts).pack(fill="x", padx=12, pady=(0,10))
+                  padx=6, pady=4, cursor="hand2",
+                  command=self.clear_alerts).pack(fill="x", padx=8, pady=(0,8))
 
     def _build_log(self, parent):
         frame = tk.Frame(parent, bg=self.PANEL_BG)
@@ -204,11 +207,17 @@ class ContactTracingApp:
             self._log("Models loaded.", "info")
 
         cam = self.camera_index.get()
-        cap = cv2.VideoCapture(cam)
+        # Use DirectShow backend on Windows for reliable camera access
+        cap = cv2.VideoCapture(cam, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(cam)         # fallback: default backend
         if not cap.isOpened() and cam != 0:
-            cap = cv2.VideoCapture(0)
+            cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         if not cap.isOpened():
             self._log("ERROR: Cannot open camera.", "alert"); return
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 30)
 
         self._cap    = cap
         self.running = True
@@ -329,7 +338,7 @@ class ContactTracingApp:
         if not self.frame_queue.empty():
             frame, np_, no_, nc_ = self.frame_queue.get_nowait()
             rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            photo = ImageTk.PhotoImage(Image.fromarray(rgb).resize((640, 480)))
+            photo = ImageTk.PhotoImage(Image.fromarray(rgb).resize((480, 360)))
             self.video_label.configure(image=photo)
             self.video_label.image = photo
             self.lbl_persons.config(text=str(np_))
