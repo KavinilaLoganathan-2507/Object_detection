@@ -4,3 +4,4 @@
 ultralytics>=8.0.0    # YOLOv8
 opencv-python>=4.8.0  # OpenCV for image/video processing
 numpy>=1.24.0         # Numerical operations
+Pillow>=10.0.0        # Embed OpenCV frames in tkinter UI
