@@ -1,6 +1,6 @@
 """
-MDR Contact Tracing - Object Contamination Detection
-Detects when patients touch bottles/cups and marks them contaminated.
+Object_detection Contact Tracing - Object Contamination Detection
+Detects when persons touch bottles/cups and marks them contaminated.
 UI: tkinter with live camera feed, stats panel, alert log and controls.
 """
 import cv2
@@ -16,7 +16,7 @@ from PIL import Image, ImageTk
 # ─── Classes ────────────────────────────────────────────────────────────────
 OBJECTS    = [39, 40, 41]
 PERSONS    = [0]
-CLASS_NAMES = {0: 'Patient', 39: 'Bottle', 40: 'Glass', 41: 'Cup'}
+CLASS_NAMES = {0: 'Person', 39: 'Bottle', 40: 'Glass', 41: 'Cup'}
 
 # ─── Detection helpers ───────────────────────────────────────────────────────
 def iou(a, b):
@@ -55,7 +55,7 @@ class ContactTracingApp:
 
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("MDR Contact Tracing System")
+        self.root.title("Object_detection Contact Tracing System")
         self.root.configure(bg=self.BG)
         self.root.resizable(False, False)
 
@@ -79,7 +79,7 @@ class ContactTracingApp:
         # Title bar
         title_bar = tk.Frame(self.root, bg=self.ACCENT, pady=8)
         title_bar.pack(fill="x")
-        tk.Label(title_bar, text="  MDR Contact Tracing System",
+        tk.Label(title_bar, text="  Object_detection Contact Tracing System",
                  font=("Segoe UI", 14, "bold"),
                  bg=self.ACCENT, fg=self.TEXT).pack(side="left")
         tk.Label(title_bar, text="YOLOv8  |  Real-Time Detection  ",
@@ -131,7 +131,7 @@ class ContactTracingApp:
                      bg=self.ACCENT, fg=self.SUBTEXT).pack()
             return card, lbl
 
-        p_card, self.lbl_patients     = stat_card(row, "PATIENTS",     self.YELLOW)
+        p_card, self.lbl_persons      = stat_card(row, "PERSONS",      self.YELLOW)
         o_card, self.lbl_objects      = stat_card(row, "OBJECTS",      self.GREEN)
         c_card, self.lbl_contaminated = stat_card(row, "CONTAMINATED", self.RED)
         for card in (p_card, o_card, c_card):
@@ -231,7 +231,7 @@ class ContactTracingApp:
         self.log_box.config(state="normal")
         self.log_box.delete("1.0", "end")
         self.log_box.config(state="disabled")
-        self.lbl_patients.config(text="0")
+        self.lbl_persons.config(text="0")
         self.lbl_objects.config(text="0")
         self.lbl_contaminated.config(text="0")
         self._log("Alerts cleared.", "info")
@@ -253,7 +253,7 @@ class ContactTracingApp:
                                             verbose=False)[0]
             pose    = self.pose_model(frame, conf=0.3, verbose=False)[0]
 
-            obj_boxes, patient_boxes = [], []
+            obj_boxes, person_boxes = [], []
             if objs.boxes is not None and len(objs.boxes):
                 ids = (objs.boxes.id.cpu().numpy().astype(int)
                        if objs.boxes.id is not None else range(len(objs.boxes)))
@@ -266,35 +266,35 @@ class ContactTracingApp:
                        if persons.boxes.id is not None else range(len(persons.boxes)))
                 for box, cls, tid in zip(persons.boxes.xyxy.cpu().numpy(),
                                          persons.boxes.cls.cpu().numpy().astype(int), ids):
-                    patient_boxes.append((tid, cls, box))
+                    person_boxes.append((tid, cls, box))
 
             palms = []
             if pose.keypoints is not None:
                 for i in range(len(pose.keypoints)):
                     kp = pose.keypoints[i].data[0].cpu().numpy()
                     for p in get_palms(kp, frame.shape):
-                        p['patient'] = None
-                        for pid, _, pbox in patient_boxes:
+                        p['person'] = None
+                        for pid, _, pbox in person_boxes:
                             if (pbox[0] <= p['center'][0] <= pbox[2] and
                                     pbox[1] <= p['center'][1] <= pbox[3]):
-                                p['patient'] = pid; break
+                                p['person'] = pid; break
                         palms.append(p)
 
             for palm in palms:
                 for oid, ocls, obox in obj_boxes:
                     if iou(palm['box'], obox) > 0.10 and oid not in self.contaminated:
                         ts = time.strftime("%H:%M:%S")
-                        self.contaminated[oid] = {'patient': palm.get('patient','?'),
+                        self.contaminated[oid] = {'person': palm.get('person','?'),
                                                    'class': ocls, 'time': ts}
                         self.alert_queue.put(
-                            f"[{ts}] Patient {palm.get('patient','?')} touched "
+                            f"[{ts}] Person {palm.get('person','?')} touched "
                             f"{CLASS_NAMES.get(ocls,'obj')} (ID:{oid})")
 
             # Draw overlays
-            for pid, _, box in patient_boxes:
+            for pid, _, box in person_boxes:
                 x1,y1,x2,y2 = box.astype(int)
                 cv2.rectangle(frame, (x1,y1), (x2,y2), (255,220,0), 2)
-                cv2.putText(frame, f"Patient {pid}",
+                cv2.putText(frame, f"Person {pid}",
                             (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,220,0), 2)
 
             for oid, ocls, box in obj_boxes:
@@ -312,14 +312,14 @@ class ContactTracingApp:
             # HUD
             cv2.rectangle(frame, (0,0), (frame.shape[1], 36), (0,0,0), -1)
             cv2.putText(frame,
-                        f"  Patients:{len(patient_boxes)}  "
+                        f"  Persons:{len(person_boxes)}  "
                         f"Objects:{len(obj_boxes)}  "
                         f"Contaminated:{len(self.contaminated)}",
                         (8,24), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
 
             if not self.frame_queue.full():
                 self.frame_queue.put((frame.copy(),
-                                      len(patient_boxes),
+                                      len(person_boxes),
                                       len(obj_boxes),
                                       len(self.contaminated)))
         cap.release()
@@ -332,7 +332,7 @@ class ContactTracingApp:
             photo = ImageTk.PhotoImage(Image.fromarray(rgb).resize((640, 480)))
             self.video_label.configure(image=photo)
             self.video_label.image = photo
-            self.lbl_patients.config(text=str(np_))
+            self.lbl_persons.config(text=str(np_))
             self.lbl_objects.config(text=str(no_))
             self.lbl_contaminated.config(text=str(nc_))
 
